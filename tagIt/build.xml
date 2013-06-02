@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+
+<project name="TagIt" default="tar" basedir=".">
+
+	<property name="source.dir"        	value="src" 			/>
+	<property name="class.dir"         	value="bin" 			/>
+	<property name="class.jar.file"  		value="dist/tagit.jar" 			/>
+	<property name="source.jar.file"  	value="dist/tagit-source.jar" 	/>
+	<property name="version"				value="tagit-1.0" />
+
+	<target name="init">
+		<mkdir dir="${class.dir}" />
+		<mkdir dir="dist" />
+	</target>
+
+	<target name="compile" depends="init">
+		<javac destdir="${class.dir}" srcdir="${source.dir}" deprecation="true"	optimize="true" />
+	</target>
+	
+	<target name="jar" depends="init,compile">
+		<jar destfile="${class.jar.file}"  basedir="${class.dir}" compress="true"  />
+		<jar destfile="${source.jar.file}" basedir="${source.dir}" compress="true" />
+	</target>
+
+	<target name="tar" depends="jar">
+		<mkdir dir="${version}" />
+		<copy file="${class.jar.file}" 	toDir="${version}" />
+		<copy file="${source.jar.file}" 	toDir="${version}" />
+		<copy file="lgpl.txt" 			toDir="${version}" />
+		<copy file="license.html"		 	toDir="${version}" />
+		
+		<tar tarfile="${version}.tar" basedir="." includes="${version}/**" excludes=".*" />
+		<gzip zipfile="${version}.tar.gz" src="${version}.tar"/>
+		<chmod dir="${version}.tar.gz" perm="a+r" />
+		<delete file="${version}.tar" />
+
+		<delete dir="${version}" />
+	</target>
+
+	<target name="deploy" depends="tar">
+	</target>
+
+	<target name="clean">
+		<delete dir="dist" />
+	</target>
+	
+	<target name="lint">
+		<antcall target="findbugs" />
+		<antcall target="pmd"      />
+	</target>
+
+	<target name="pmd" depends="init">
+		<taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask">
+			<classpath>
+				<fileset dir="/usr/local/pmd/lib" />
+			</classpath>
+		</taskdef>
+		
+		<pmd shortFilenames="true">
+			<ruleset>rulesets/basic.xml</ruleset>
+			<ruleset>rulesets/unusedcode.xml</ruleset>
+			<ruleset>rulesets/design.xml</ruleset>
+			<ruleset>rulesets/imports.xml</ruleset>
+			
+			<formatter type="html" toFile="dist/pmd.html" />
+			<fileset dir="${source.dir}">
+				<include name="**/*.java" />
+			</fileset>
+		</pmd>
+	</target>
+
+	<target name="findbugs" depends="init">
+		<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask">
+			<classpath>
+				<fileset dir="/usr/local/findbugs/lib/" />
+			</classpath>
+		</taskdef>
+		
+		<findbugs home="/usr/local/findbugs" output="html" outputFile="dist/findbugs.html" >
+			<auxClasspath path="/Users/steve/java/j2ee.jar" />
+			<sourcePath path="${source.dir}" />
+			<class location="${class.dir}" />
+		</findbugs>
+	</target>
+</project>
